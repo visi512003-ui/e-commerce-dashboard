@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>E-Commerce Sales Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e334d;
+    --accent1: #6c63ff;
+    --accent2: #00d4aa;
+    --accent3: #ff6b6b;
+    --accent4: #ffd166;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --green: #22c55e;
+    --red: #ef4444;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* TOP BAR */
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 28px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 12px; }
+  .logo-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent1); box-shadow: 0 0 10px var(--accent1); }
+  .topbar-title { font-size: 15px; font-weight: 600; letter-spacing: 0.3px; }
+  .topbar-subtitle { font-size: 12px; color: var(--muted); }
+  .topbar-right { display: flex; gap: 16px; align-items: center; font-size: 12px; color: var(--muted); }
+  .badge { background: var(--surface2); border: 1px solid var(--border); padding: 4px 10px; border-radius: 20px; font-size: 11px; }
+  .badge.live { border-color: var(--green); color: var(--green); }
+
+  /* LAYOUT */
+  .main { padding: 24px 28px; max-width: 1600px; margin: 0 auto; }
+
+  /* KPI ROW */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .kpi-card:hover { border-color: var(--accent1); }
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .kpi-card.c1::before { background: var(--accent1); }
+  .kpi-card.c2::before { background: var(--accent2); }
+  .kpi-card.c3::before { background: var(--accent3); }
+  .kpi-card.c4::before { background: var(--accent4); }
+  .kpi-card.c5::before { background: #a78bfa; }
+
+  .kpi-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+  .kpi-value { font-family: 'DM Mono', monospace; font-size: 24px; font-weight: 500; line-height: 1; margin-bottom: 6px; }
+  .kpi-sub { font-size: 11px; color: var(--muted); }
+  .kpi-delta { font-size: 11px; display: inline-flex; align-items: center; gap: 3px; margin-top: 4px; }
+  .kpi-delta.up { color: var(--green); }
+  .kpi-delta.down { color: var(--red); }
+
+  /* CHART GRID */
+  .grid-2 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .grid-1-1 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .chart-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; }
+  .chart-title { font-size: 13px; font-weight: 600; }
+  .chart-desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .chart-tag { font-size: 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 3px 8px; color: var(--muted); }
+
+  canvas { max-height: 240px; }
+
+  /* TABLE */
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  thead th {
+    text-align: left; padding: 8px 12px;
+    color: var(--muted); font-weight: 500;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px;
+    border-bottom: 1px solid var(--border);
+  }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
+  tbody tr:hover { background: var(--surface2); }
+  tbody td { padding: 10px 12px; }
+  .rank { color: var(--muted); font-size: 11px; width: 24px; }
+  .prod-name { font-weight: 500; }
+  .bar-cell { display: flex; align-items: center; gap: 8px; }
+  .mini-bar { height: 5px; border-radius: 3px; background: var(--accent1); opacity: 0.8; }
+  .num { font-family: 'DM Mono', monospace; font-size: 11px; }
+  .profit-pct { font-size: 11px; }
+  .profit-pct.high { color: var(--green); }
+  .profit-pct.mid { color: var(--accent4); }
+
+  /* FOOTER */
+  .footer {
+    text-align: center;
+    font-size: 11px;
+    color: var(--muted);
+    padding: 20px 0 30px;
+    border-top: 1px solid var(--border);
+    margin-top: 24px;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo-dot"></div>
+    <div>
+      <div class="topbar-title">E-Commerce Sales Analytics</div>
+      <div class="topbar-subtitle">Data period: 2022 – 2024 &nbsp;|&nbsp; 3,500 orders &nbsp;|&nbsp; 10 products &nbsp;|&nbsp; 4 regions</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span class="badge live">● Live Data</span>
+    <span class="badge">Electronics · Accessories · Office</span>
+    <span class="badge">Last updated: 2024-12</span>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- KPI ROW -->
+  <div class="kpi-row">
+    <div class="kpi-card c1">
+      <div class="kpi-label">Total Revenue</div>
+      <div class="kpi-value" style="color:#6c63ff">₹1.07 Cr</div>
+      <div class="kpi-sub">$10,667,881 USD</div>
+      <div class="kpi-delta up">↑ 16.3% YoY (2022→2023)</div>
+    </div>
+    <div class="kpi-card c2">
+      <div class="kpi-label">Total Profit</div>
+      <div class="kpi-value" style="color:#00d4aa">$1.84M</div>
+      <div class="kpi-sub">3-year cumulative</div>
+      <div class="kpi-delta up">↑ Avg margin 17.3%</div>
+    </div>
+    <div class="kpi-card c3">
+      <div class="kpi-label">Total Orders</div>
+      <div class="kpi-value" style="color:#ff6b6b">3,500</div>
+      <div class="kpi-sub">All categories combined</div>
+      <div class="kpi-delta up">↑ Avg 1,167/year</div>
+    </div>
+    <div class="kpi-card c4">
+      <div class="kpi-label">Avg Order Value</div>
+      <div class="kpi-value" style="color:#ffd166">$3,048</div>
+      <div class="kpi-sub">Per transaction</div>
+      <div class="kpi-delta up">↑ Strong basket size</div>
+    </div>
+    <div class="kpi-card c5">
+      <div class="kpi-label">Top Product</div>
+      <div class="kpi-value" style="color:#a78bfa; font-size:18px">Camera</div>
+      <div class="kpi-sub">$1.18M revenue</div>
+      <div class="kpi-delta up">↑ #1 by sales & profit</div>
+    </div>
+  </div>
+
+  <!-- ROW 2: Monthly trend + Category Pie -->
+  <div class="grid-2">
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Monthly Revenue & Profit Trend</div>
+          <div class="chart-desc">Sales vs Profit over time (all 3 years combined)</div>
+        </div>
+        <div class="chart-tag">Line Chart</div>
+      </div>
+      <canvas id="monthlyChart"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Sales by Category</div>
+          <div class="chart-desc">Revenue share breakdown</div>
+        </div>
+        <div class="chart-tag">Donut</div>
+      </div>
+      <canvas id="categoryChart" style="max-height:220px"></canvas>
+    </div>
+  </div>
+
+  <!-- ROW 3: Region bar + Year comparison + Margin -->
+  <div class="grid-3">
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Revenue by Region</div>
+          <div class="chart-desc">West leads with $2.84M</div>
+        </div>
+        <div class="chart-tag">Bar</div>
+      </div>
+      <canvas id="regionChart"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Year-over-Year Comparison</div>
+          <div class="chart-desc">Sales & Profit by year</div>
+        </div>
+        <div class="chart-tag">Grouped Bar</div>
+      </div>
+      <canvas id="yearChart"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Profit Margin by Category</div>
+          <div class="chart-desc">Near-equal margin (~17.3%)</div>
+        </div>
+        <div class="chart-tag">Horizontal Bar</div>
+      </div>
+      <canvas id="marginChart"></canvas>
+    </div>
+  </div>
+
+  <!-- ROW 4: Top Products Table + Region vs Category Heatmap -->
+  <div class="grid-1-1">
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Top 10 Products — Sales vs Profit</div>
+          <div class="chart-desc">Ranked by total revenue</div>
+        </div>
+        <div class="chart-tag">Table</div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th><th>Product</th><th>Category</th><th>Revenue</th><th>Profit</th><th>Margin</th>
+          </tr>
+        </thead>
+        <tbody id="productTable"></tbody>
+      </table>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Region × Category — Sales Heatmap</div>
+          <div class="chart-desc">Electronics dominates in West ($1.46M)</div>
+        </div>
+        <div class="chart-tag">Stacked Bar</div>
+      </div>
+      <canvas id="heatmapChart"></canvas>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  E-Commerce Sales Dashboard · Data: ecommerce_sales_cleaned.csv · 3,500 Orders · 2022–2024 · Built with Chart.js
+</div>
+
+<script>
+const C = {
+  accent1: '#6c63ff', accent2: '#00d4aa', accent3: '#ff6b6b',
+  accent4: '#ffd166', accent5: '#a78bfa', accent6: '#38bdf8',
+  bg: '#1a1d27', border: '#2e334d', muted: '#64748b', text: '#e2e8f0'
+};
+
+const baseOpts = {
+  responsive: true,
+  plugins: {
+    legend: { labels: { color: C.text, font: { family: 'DM Sans', size: 11 }, boxWidth: 10, padding: 12 } }
+  },
+  scales: {
+    x: { ticks: { color: C.muted, font: { size: 10 } }, grid: { color: C.border } },
+    y: { ticks: { color: C.muted, font: { size: 10 } }, grid: { color: C.border } }
+  }
+};
+
+// 1. Monthly trend
+const months = ["Jan'22","Feb'22","Mar'22","Apr'22","May'22","Jun'22","Jul'22","Aug'22","Sep'22","Oct'22","Nov'22","Dec'22",
+  "Jan'23","Feb'23","Mar'23","Apr'23","May'23","Jun'23","Jul'23","Aug'23","Sep'23","Oct'23","Nov'23","Dec'23",
+  "Jan'24","Feb'24","Mar'24","Apr'24","May'24","Jun'24","Jul'24","Aug'24","Sep'24","Oct'24","Nov'24","Dec'24"];
+
+const monthlySales = [230102,249583,266743,272109,258964,280112,295463,261894,278230,305429,322876,234465,
+  291403,307291,324812,311092,330491,342018,298763,284129,301947,316289,337482,340875,
+  272930,290142,304761,278334,373911,314268,309515,240269,341926,314135,291769,324997];
+
+const monthlyProfit = [39811,43177,46149,47073,44807,48468,51150,45296,48153,52840,55919,40573,
+  50421,53189,56234,53836,57213,59177,51703,49185,52277,54754,58414,59003,
+  47256,50215,52743,48184,64717,54409,53576,41584,59161,54369,50473,56258];
+
+new Chart(document.getElementById('monthlyChart'), {
+  type: 'line',
+  data: {
+    labels: months,
+    datasets: [
+      { label: 'Sales ($)', data: monthlySales, borderColor: C.accent1, backgroundColor: C.accent1+'20', fill: true, tension: 0.4, borderWidth: 2, pointRadius: 0 },
+      { label: 'Profit ($)', data: monthlyProfit, borderColor: C.accent2, backgroundColor: C.accent2+'20', fill: true, tension: 0.4, borderWidth: 2, pointRadius: 0 }
+    ]
+  },
+  options: { ...baseOpts, plugins: { ...baseOpts.plugins, legend: { ...baseOpts.plugins.legend } } }
+});
+
+// 2. Category donut
+new Chart(document.getElementById('categoryChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Electronics', 'Accessories', 'Office'],
+    datasets: [{ data: [5326074, 4247591, 1094216], backgroundColor: [C.accent1, C.accent2, C.accent4], borderWidth: 0, hoverOffset: 6 }]
+  },
+  options: {
+    responsive: true, cutout: '68%',
+    plugins: { legend: { position: 'bottom', labels: { color: C.text, font: { family: 'DM Sans', size: 11 }, boxWidth: 10, padding: 10 } } }
+  }
+});
+
+// 3. Region bar
+new Chart(document.getElementById('regionChart'), {
+  type: 'bar',
+  data: {
+    labels: ['West', 'East', 'South', 'North'],
+    datasets: [{
+      label: 'Sales ($)',
+      data: [2844450, 2675110, 2659548, 2488773],
+      backgroundColor: [C.accent1, C.accent2, C.accent3, C.accent4],
+      borderRadius: 6, borderWidth: 0
+    }]
+  },
+  options: { ...baseOpts, plugins: { legend: { display: false } }, scales: { ...baseOpts.scales, y: { ...baseOpts.scales.y, ticks: { ...baseOpts.scales.y.ticks, callback: v => '$'+(v/1e6).toFixed(1)+'M' } } } }
+});
+
+// 4. Year comparison grouped
+new Chart(document.getElementById('yearChart'), {
+  type: 'bar',
+  data: {
+    labels: ['2022', '2023', '2024'],
+    datasets: [
+      { label: 'Sales', data: [3255970, 3786592, 3625319], backgroundColor: C.accent1, borderRadius: 5, borderWidth: 0 },
+      { label: 'Profit', data: [564535, 655980, 624150], backgroundColor: C.accent2, borderRadius: 5, borderWidth: 0 }
+    ]
+  },
+  options: { ...baseOpts, scales: { ...baseOpts.scales, y: { ...baseOpts.scales.y, ticks: { ...baseOpts.scales.y.ticks, callback: v => '$'+(v/1e6).toFixed(1)+'M' } } } }
+});
+
+// 5. Profit margin horizontal
+new Chart(document.getElementById('marginChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Electronics', 'Accessories', 'Office'],
+    datasets: [{ label: 'Avg Profit Margin %', data: [17.42, 17.33, 17.28], backgroundColor: [C.accent1, C.accent2, C.accent4], borderRadius: 6, borderWidth: 0 }]
+  },
+  options: {
+    ...baseOpts, indexAxis: 'y',
+    plugins: { legend: { display: false } },
+    scales: { x: { ...baseOpts.scales.x, ticks: { ...baseOpts.scales.x.ticks, callback: v => v+'%' }, min: 17, max: 18 }, y: { ...baseOpts.scales.y } }
+  }
+});
+
+// 6. Product table
+const products = [
+  {name:'Camera',cat:'Electronics',sales:1177381,profit:207630,margin:17.6},
+  {name:'Monitor',cat:'Electronics',sales:1160048,profit:202028,margin:17.4},
+  {name:'Printer',cat:'Office',sales:1094216,profit:185394,margin:16.9},
+  {name:'Mouse',cat:'Accessories',sales:1074398,profit:185763,margin:17.3},
+  {name:'Smartphone',cat:'Electronics',sales:1069681,profit:185204,margin:17.3},
+  {name:'Laptop',cat:'Electronics',sales:1041940,profit:185756,margin:17.8},
+  {name:'Headphones',cat:'Accessories',sales:1021749,profit:177158,margin:17.3},
+  {name:'Keyboard',cat:'Accessories',sales:1021222,profit:176856,margin:17.3},
+  {name:'Tablet',cat:'Electronics',sales:876764,profit:151829,margin:17.3},
+  {name:'Smartwatch',cat:'Accessories',sales:1130220,profit:195621,margin:17.3},
+];
+const maxSales = Math.max(...products.map(p=>p.sales));
+const tbody = document.getElementById('productTable');
+products.sort((a,b)=>b.sales-a.sales).forEach((p,i) => {
+  const barW = Math.round((p.sales/maxSales)*100);
+  const cls = p.margin>17.5?'high':'mid';
+  tbody.innerHTML += `<tr>
+    <td class="rank">${i+1}</td>
+    <td class="prod-name">${p.name}</td>
+    <td style="color:${C.muted};font-size:11px">${p.cat}</td>
+    <td><div class="bar-cell"><div class="mini-bar" style="width:${barW}px"></div><span class="num">$${(p.sales/1e6).toFixed(2)}M</span></div></td>
+    <td class="num">$${(p.profit/1e3).toFixed(0)}K</td>
+    <td class="profit-pct ${cls}">${p.margin}%</td>
+  </tr>`;
+});
+
+// 7. Region × Category stacked
+new Chart(document.getElementById('heatmapChart'), {
+  type: 'bar',
+  data: {
+    labels: ['East', 'North', 'South', 'West'],
+    datasets: [
+      { label: 'Electronics', data: [1377211, 1244702, 1245527, 1458634], backgroundColor: C.accent1, borderRadius: 0 },
+      { label: 'Accessories', data: [1032315, 1020641, 1076668, 1117967], backgroundColor: C.accent2, borderRadius: 0 },
+      { label: 'Office',      data: [265584, 223430, 337353, 267849], backgroundColor: C.accent4, borderRadius: 0 }
+    ]
+  },
+  options: {
+    ...baseOpts,
+    scales: {
+      x: { ...baseOpts.scales.x, stacked: true },
+      y: { ...baseOpts.scales.y, stacked: true, ticks: { ...baseOpts.scales.y.ticks, callback: v => '$'+(v/1e6).toFixed(1)+'M' } }
+    }
+  }
+});
+</script>
+</body>
+</html>
