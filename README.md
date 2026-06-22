@@ -109,9 +109,8 @@ Adding more products could diversify revenue streams.
 
 Project Screenshots
 
-(Add screenshots here)
+<img width="1918" height="715" alt="Screenshot 2026-05-26 172731" src="https://github.com/user-attachments/assets/8c72b178-4c2a-45ec-8555-0f9021ae4a93" />
 
-![Dashboard](screenshots/dashboard-overview.png)
 Future Improvements
 Power BI Dashboard
 Automated ETL Pipeline
@@ -122,25 +121,26 @@ Author
 
 Vipul Singh
 
-LinkedIn: Your LinkedIn URL
+LinkedIn: https://www.linkedin.com/in/vipul-singh34/
 
-GitHub: Your GitHub URL
+GitHub: https://github.com/visi512003-ui
 
 requirements.txt
+
 pandas
 numpy
 matplotlib
 seaborn
 jupyter
 openpyxl
-SQL File Example
+
 -- Total Revenue
 
 SELECT
 SUM(sales) AS total_revenue
 FROM ecommerce_sales;
 
--- Revenue by Region
+-- Revenue by Region--
 
 SELECT
 region,
@@ -149,7 +149,7 @@ FROM ecommerce_sales
 GROUP BY region
 ORDER BY revenue DESC;
 
--- Top Products
+-- Top Products --
 
 SELECT
 product_name,
